@@ -1,0 +1,7 @@
+commerce_tahseel_gateway.callback:
+  path: '/commerce_tahseel/callback'
+  defaults:
+    _controller: '\Drupal\commerce_tahseel_gateway\Controller\CallbackController::callback'
+    _title: 'Quickpay callback'
+  requirements:
+    _commerce_quickpay_gateway_callback_access_check: 'TRUE'

@@ -1,0 +1,16 @@
+{
+    "name": "drupal/commerce_tahseel",
+    "type": "drupal-module",
+    "description": "Provides Commerce integration for Tahseel Payment Gateway",
+    "homepage": "https://www.drupal.org/project/issues/commerce_tahseel",
+    "license": "GPL-2.0+",
+    "keywords": ["Drupal"],
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/commerce_tahseel",
+        "source": "http://cgit.drupalcode.org/commerce_tahseel"
+    },
+    "require": {
+        "drupal/commerce": "~2.0"
+    }
+}

@@ -1,0 +1,11 @@
+name: Commerce Tahseel
+description: Provides Integration with the Tahseel Payment Gateway (http://www.tahseel.com)
+core_version_requirement: ^8.8 || ^9
+type: module
+package: Commerce (contrib)
+dependencies:
+  - commerce:commerce_payment
+# Information added by Drupal.org packaging script on 2020-08-05
+version: '8.x-2.0-beta2'
+project: 'commerce_tahseel'
+datestamp: 1596660709

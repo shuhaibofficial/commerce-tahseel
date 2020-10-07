@@ -1,5 +1,5 @@
 services:
-  logger.channel.commerce_worldpay:
+  logger.channel.commerce_tahseel:
     class: Drupal\Core\Logger\LoggerChannel
     factory: logger.factory:get
-    arguments: ['tahseel_worldpay']
+    arguments: ['commerce_tahseel']

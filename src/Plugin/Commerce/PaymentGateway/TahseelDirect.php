@@ -26,6 +26,7 @@ use Drupal\commerce_payment\Exception\PaymentGatewayException;
 use Drupal\commerce_payment\PaymentMethodTypeManager;
 use Drupal\commerce_payment\PaymentTypeManager;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 
 /**
@@ -279,11 +280,15 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
         //payment->getOrder()->getOrderNumber() //should retun the order number of current customer not parent sadlt it returns NULL ?
         //$orderid = $payment->getOrderId(); //prints parent order id we don't need it,bcz its internal order id
         //
-
+        $billing_account = $data->PaymentDetails->Details->Refid; //From Postman Mock since no service available for now
+        $billing_amount = $this->rounder->round($payment->getAmount())->getNumber();
         $state_interface= $payment->getOrder()->getState();            //\Drupal\state_machine\Plugin\Field\FieldType\StateItemInterface
 
-        
-      
+        $soap_response_status = $this->executeSoapTransaction($billing_account,$billing_amount)->MsgRsHdr->ResponseStatus->StatusCode;
+      if(strcmp($soap_response_status,'I000000')) ///if both string are equal then strcmp() returns 0 so unless there is error we will never enter here
+      {
+        throw new HardDeclineException('Could not charge the payment method.Soap Response Error: ' );
+      }  
 
 
         
@@ -303,8 +308,8 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
         drupal_set_message(t('Original iD  : %order', array('%order' => gettype($current_state).$current_state)), 'status');
         drupal_set_message(t('getId  : %order', array('%order' => gettype($current_state2).$current_state2)), 'status');
         drupal_set_message(t('getLabel  : %order', array('%order' => gettype($current_state3).$current_state3)), 'status');
-        //drupal_set_message(t('getLabel  : %order', array('%order' => print_r($state_interface,TRUE))), 'status');
-
+        drupal_set_message(t('Amount To Pay  : %amount', array('%amount' => $payment->getAmount())), 'status');
+        drupal_set_message(t('<strong>Soap Reponse status:%response</strong>',array('%response' => $soap_response_status)), 'status');
         drupal_set_message(t('<strong>SADAD Bill Ref:%srefid</strong>',array('%srefid' => $sadad_ref_id)), 'status');
         drupal_set_message(t('<strong>SADAD Biller Name:Ministry of Finance</strong>'), 'status');
         drupal_set_message(t('<strong>SADAD Biller Code:%billid</strong>',array('%billid' => $sadad_bill_id)), 'status');
@@ -373,16 +378,20 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
   
 
     // Get and check the VendorTxCode.
-    //$txCode = $request->request->get('transId') !== NULL ? $request->request->get('transId') : FALSE;
+    $txCode = $content_body->BillAccount !== NULL ? $content_body->BillAccount : FALSE;
 
-    //if (empty($txCode) || empty($request->request->get('MC_orderId'))) {
-    //  $this->logger->error('No Transaction code have been returned.');
-    //  throw new PaymentGatewayException();
-   // }
+    //strcmp($str1,$str2) retrun zero if both st1,st2 are equal (if tahseel returns bad notfication not like 'Succeeded' it throw gateway exception) 
 
-    $amount = new Price($content_body->PaymentDetails->Details->Amount, $content_body->PaymentDetails->Details->Currency);
+    if (empty($txCode) || empty($content_body->PaymentStatusCode)  ) {
+       $this->logger->error('No Transaction code have been returned.');
+       throw new PaymentGatewayException();
+   }
 
-    $payment = $this->entityTypeManager->getStorage('commerce_order')->loadByRemoteId($content_body->PaymentDetails->Details->Refid);
+    //$amount = new Price($content_body->PaymentDetails->Details->Amount, $content_body->PaymentDetails->Details->Currency);
+    $amount = new Price($content_body->PaymentAmount, 'USD');
+    //$payment = $this->entityTypeManager->getStorage('commerce_payment')->loadByRemoteId($content_body->PaymentDetails->Details->Refid);
+    $payment = $this->entityTypeManager->getStorage('commerce_payment')->loadByRemoteId($content_body->BillAccount);
+
 
     if (!empty($payment)) {
       
@@ -487,6 +496,57 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
     ]);
     return $this->prepareResult($response->getBody()->getContents());
   }
+
+    /**
+   * Post a transaction to the Payflow server and return the response.
+   *
+   * @param array $parameters
+   *   The parameters to send (will have base parameters added).
+   *
+   * @return object
+   *   The response body data in array format.
+   */
+
+
+  protected function executeSoapTransaction($billing_account,$billing_amount) {
+    $wsdl   = "http://localhost:7800/BillManage?WSDL";
+    $client = new \SoapClient($wsdl, array('trace'=>1,'soap_version' => SOAP_1_2));  // The trace param will show you errors stack
+    
+    // web service input params
+    
+    $request_param = array(
+      "MsgRqHdr" => ["RqUID" => "portals4d46s4ds64s64d","SCId" =>"PORTAL" , "ServiceId" => "BillManage" , "FuncId" => "25000000"],
+        "Body" => ["BillList" => [
+            "BillInfo" => ["AgencyId" => "041001000000002000","BillCategory"=>"APIBill","BillingAcct"=>$billing_account,"Amt"=>$billing_amount,"BillAction"=>"I","DisplayLabelAr"=>" جامعة دار ا ل حكمة الاهلية ","DisplayLabelEn"=>"Faculty of DAR ALHEKMA","BillDueDt"=>"2020-04-08","BillRefInfo"=>"API",
+                     "RevenueEntryList" => ["RevenueEntryInfo"=>["BenAgencyId" => "7770070000000000", "GFSCode"=>"1421901", "Amt"=>$billing_amount]
+                     ] //revenue entry list end
+            
+            ]//Billinfo ends
+        ]//Billits end
+    
+    
+        ] //Body ends
+        
+    );
+    
+    try
+    {
+        $responce_param = $client->BillManage($request_param);
+       //$responce_param =  $client->call("webservice_methode_name", $request_param); // Alternative way to call soap method
+      // echo "<p>".var_dump ($responce_param->MsgRsHdr->ResponseStatus->StatusCode)."</p>"; 
+    } 
+    catch (Exception $e) 
+    { 
+        echo "<h2>Exception Error!</h2>"; 
+        echo $e->getMessage(); 
+    }
+    return $responce_param;
+
+  }
+
+
+
+
 
 
   

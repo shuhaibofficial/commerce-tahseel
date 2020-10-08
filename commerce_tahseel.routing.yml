@@ -1,0 +1,11 @@
+commerce_tahseel.notify:
+  path: '/commerce-tahseel/notify'
+  defaults:
+    _controller: '\Drupal\commerce_tahseel\Controller\HelloWorldController::content'  #PaymentNotificationController::notifyPage
+    commerce_payment_gateway: 'tahseel_direct'
+  requirements:
+    _permission: 'TRUE' 
+#  options:
+#    parameters:
+#      commerce_payment_gateway:
+#        type: entity:commerce_payment_gateway

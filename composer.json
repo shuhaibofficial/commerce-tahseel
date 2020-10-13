@@ -1,7 +1,7 @@
 {
     "name": "drupal/commerce_tahseel",
     "type": "drupal-module",
-    "description": "Provides Commerce integration for Worldpay.com",
+    "description": "Provides Commerce integration for Tahseel",
     "homepage": "http://drupal.org/project/commerce_tahseel",
     "license": "GPL-2.0+",
     "keywords": ["Drupal"],
@@ -11,7 +11,6 @@
         "source": "http://cgit.drupalcode.org/commerce_tahseel"
     },
     "require": {
-        "drupal/commerce": "~2.0",
-        "worldpay/worldpay-lib-php": "^2.1"
+        "drupal/commerce": "~2.0"
     }
 }

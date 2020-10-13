@@ -30,14 +30,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 
 /**
- * Provides the Worldpay direct payment gateway.
+ * Provides the Tahseel direct payment gateway.
  *
  * @CommercePaymentGateway(
  *   id = "tahseel_direct",
  *   label = @Translation("Tahseel (Direct)"),
  *   display_label = @Translation("Tahseel"),
  *    forms = {
- *     "add-payment-method" = "Drupal\commerce_tahseel\PluginForm\Onsite\TahseelDirectForm",
+ *     "add-payment-method" = "Drupal\commerce_tahseel\PluginForm\Onsite\TahseelPaymentMethodAddForm",
  *   },
  *   payment_method_types = {"tahseel_payment_method"},
 
@@ -308,7 +308,7 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
         drupal_set_message(t('Original iD  : %order', array('%order' => gettype($current_state).$current_state)), 'status');
         drupal_set_message(t('getId  : %order', array('%order' => gettype($current_state2).$current_state2)), 'status');
         drupal_set_message(t('getLabel  : %order', array('%order' => gettype($current_state3).$current_state3)), 'status');
-        drupal_set_message(t('Amount To Pay  : %amount', array('%amount' => $payment->getAmount())), 'status');
+        drupal_set_message(t('Amount To Pay With VAT : %amount', array('%amount' => $payment->getAmount())), 'status');
         drupal_set_message(t('<strong>Soap Reponse status:%response</strong>',array('%response' => $soap_response_status)), 'status');
         drupal_set_message(t('<strong>SADAD Bill Ref:%srefid</strong>',array('%srefid' => $sadad_ref_id)), 'status');
         drupal_set_message(t('<strong>SADAD Biller Name:Ministry of Finance</strong>'), 'status');
@@ -388,9 +388,17 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
    }
 
     //$amount = new Price($content_body->PaymentDetails->Details->Amount, $content_body->PaymentDetails->Details->Currency);
-    $amount = new Price($content_body->PaymentAmount, 'USD');
+    $amount = new Price($content_body->PaymentAmount, 'SAR');
     //$payment = $this->entityTypeManager->getStorage('commerce_payment')->loadByRemoteId($content_body->PaymentDetails->Details->Refid);
     $payment = $this->entityTypeManager->getStorage('commerce_payment')->loadByRemoteId($content_body->BillAccount);
+  $order_interface= $payment->getOrder();
+  $order_interface->state = 'completed';
+  $order_interface->save();
+	//$transitions = $state_interface->getTransitions();
+ // $state_interface->applyTransition($transitions['validation']);
+
+  //$state_interface->getOriginalId()
+  //$exists = ($transitions instanceof Drupal\state_machine\Plugin\Workflow\WorkflowTransition);
 
 
     if (!empty($payment)) {
@@ -401,7 +409,7 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
 
 
 
-    $sample_response = array("Payment"=>"Success", "Code"=>"I0000000");
+    $sample_response = array("statusCode"=>"Success", "statusDesc"=>"I0000000","OrderState"=> $order_interface->getState()->getId());
     $output = json_encode($sample_response); 
     
 
@@ -498,13 +506,13 @@ class TahseelDirect extends OnsitePaymentGatewayBase implements TahseelDirectInt
   }
 
     /**
-   * Post a transaction to the Payflow server and return the response.
+   * Post a transaction to the Tahseel Webservice and return the response.
    *
-   * @param array $parameters
+   * @param string $billing_account,$billing_amount/may be arrayaof parameter
    *   The parameters to send (will have base parameters added).
    *
    * @return object
-   *   The response body data in array format.
+   *   The response object of soap-client php.
    */
 
 

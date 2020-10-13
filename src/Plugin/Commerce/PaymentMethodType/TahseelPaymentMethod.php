@@ -10,8 +10,8 @@ use Drupal\commerce_payment\Plugin\Commerce\PaymentMethodType\PaymentMethodTypeB
  *
  * @CommercePaymentMethodType(
  *   id = "tahseel_payment_method",
- *   label = @Translation("Tahseel Payment Methods"),
- *   create_label = @Translation("Tahseel Payment Methods"),
+ *   label = @Translation("Tahseel Payment Method"),
+ *   create_label = @Translation("Create Tahseel Payment Method"),
  * )
  */
 class TahseelPaymentMethod extends PaymentMethodTypeBase {
@@ -21,15 +21,9 @@ class TahseelPaymentMethod extends PaymentMethodTypeBase {
    */
   public function buildLabel(PaymentMethodInterface $payment_method) {
     // eChecks are not reused, so use a generic label.
-    return $this->t('Tahseel Payment Methods');
+    return $this->t('Tahseel Method');
   }
-    /**
-   * {@inheritdoc}
-   */
-  public function buildFieldDefinitions() {
-    // Probably the fields for the Offline payments should be done in the UI.
-    return [];
-  }
+    
 
   /**
    * The account types.
